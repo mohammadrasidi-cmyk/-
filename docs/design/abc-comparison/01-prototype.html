@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>日目标 - 产品ABC对标 高保真原型</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f0f2f5; padding: 20px; }
+
+  /* 设备外框 - iPad 横屏 1194x834 */
+  .ipad { width: 1194px; height: 834px; background: #fff; border-radius: 18px; margin: 0 auto 40px; box-shadow: 0 4px 20px rgba(0,0,0,.1); position: relative; overflow: hidden; }
+
+  /* 状态栏 */
+  .statusbar { height: 24px; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+
+  /* 顶部栏 */
+  .topbar { height: 60px; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f0; }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .back { font-size: 22px; cursor: pointer; }
+  .date { font-size: 22px; font-weight: 600; }
+  .tags { display: flex; gap: 8px; }
+  .tag { padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+  .tag-1 { background: #e6f7ff; color: #1890ff; }
+  .tag-2 { background: #fff7e6; color: #fa8c16; }
+  .tag-3 { background: #f6ffed; color: #52c41a; }
+  .tag-4 { background: #f9f0ff; color: #722ed1; }
+  .tag-5 { background: #fff1f0; color: #f5222d; }
+  .tag-more { background: #f5f5f5; color: #595959; }
+  .weather { color: #8c8c8c; font-size: 13px; margin-left: 12px; }
+  .topbar-right { display: flex; gap: 12px; }
+  .btn { padding: 8px 20px; border-radius: 8px; font-size: 15px; cursor: pointer; border: none; }
+  .btn-default { background: #fff; border: 1px solid #d9d9d9; color: #595959; }
+  .btn-primary { background: #1890ff; color: #fff; }
+
+  /* KPI 卡片 */
+  .kpi-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr 1fr; padding: 16px 24px; background: #fafafa; gap: 24px; }
+  .kpi { display: flex; flex-direction: column; gap: 4px; }
+  .kpi-label { font-size: 12px; color: #8c8c8c; }
+  .kpi-value { display: flex; align-items: baseline; gap: 4px; }
+  .kpi-num { font-size: 28px; font-weight: 700; color: #1890ff; }
+  .kpi-num.dark { color: #262626; }
+  .kpi-sub { font-size: 13px; color: #8c8c8c; }
+  .icon-edit { color: #1890ff; cursor: pointer; margin-left: 4px; }
+
+  /* 品类Tab */
+  .cat-tabs { display: flex; gap: 32px; padding: 12px 24px; border-bottom: 1px solid #f0f0f0; }
+  .cat-tab { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding-bottom: 8px; }
+  .cat-tab.active { border-bottom: 2px solid #1890ff; }
+  .cat-tab-name { font-size: 15px; color: #262626; font-weight: 500; }
+  .cat-tab.active .cat-tab-name { color: #1890ff; }
+  .cat-tab-sub { font-size: 11px; color: #8c8c8c; margin-top: 2px; }
+
+  /* 表格 */
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #fafafa; padding: 10px 8px; text-align: left; font-size: 13px; color: #595959; font-weight: 500; border-bottom: 1px solid #f0f0f0; }
+  tbody td { padding: 12px 8px; font-size: 14px; color: #262626; border-bottom: 1px solid #f5f5f5; }
+
+  /* 评级单元格 - 核心改造 */
+  .grade-cell { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 4px; cursor: pointer; }
+  .grade-cell:hover { background: #f0f5ff; }
+  .grade-self { font-weight: 600; color: #262626; }
+  .grade-sep { color: #d9d9d9; }
+  .grade-group { color: #595959; }
+  .grade-arrow { font-size: 12px; font-weight: 700; margin-left: 2px; }
+  .arrow-up-1 { color: #52c41a; }
+  .arrow-up-2 { color: #389e0d; }
+  .arrow-down-1 { color: #fa8c16; }
+  .arrow-down-2 { color: #f5222d; }
+  .arrow-equal { color: #bfbfbf; }
+  /* 行底色提示 */
+  tr.row-warn-down td { background: #fffbe6; }
+  tr.row-warn-strong td { background: #fff1f0; }
+
+  /* 评级列头 */
+  .col-header-grade { display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+  .col-header-grade:hover { color: #1890ff; }
+  .col-header-grade .group-name { color: #1890ff; }
+
+  /* 序号 + 物料合并列 */
+  .item-cell { display: flex; align-items: center; gap: 8px; }
+  .seq { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #1890ff; color: #fff; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .seq.gray { background: #bfbfbf; }
+  .item-name { display: flex; flex-direction: column; }
+  .item-name .name { font-size: 14px; color: #262626; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item-name .new-tag { display: inline-block; padding: 0 4px; background: #ff4d4f; color: #fff; font-size: 10px; border-radius: 2px; margin-right: 4px; }
+
+  /* 建议→目标 销量 */
+  .qty-merged { display: flex; align-items: center; gap: 6px; }
+  .qty-suggest { color: #1890ff; cursor: pointer; }
+  .qty-arrow { color: #d9d9d9; }
+  .qty-input { display: inline-flex; align-items: center; border: 1px solid #d9d9d9; border-radius: 4px; overflow: hidden; }
+  .qty-input button { width: 24px; height: 24px; border: 0; background: #fafafa; cursor: pointer; }
+  .qty-input input { width: 36px; height: 24px; border: 0; text-align: center; font-size: 13px; outline: none; }
+
+  /* 营销活动 - 折叠 */
+  .promo { display: inline-flex; gap: 4px; align-items: center; }
+  .promo-tag { padding: 2px 8px; background: #e6f7ff; color: #1890ff; border-radius: 4px; font-size: 12px; }
+  .promo-more { color: #8c8c8c; font-size: 12px; cursor: pointer; }
+
+  /* 列设置图标 */
+  .col-setting { float: right; cursor: pointer; color: #8c8c8c; }
+  .col-setting:hover { color: #1890ff; }
+
+  /* 抽屉 */
+  .drawer-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; }
+  .drawer-mask.show { display: flex; align-items: flex-end; justify-content: center; }
+  .drawer { width: 600px; max-width: 90%; background: #fff; border-radius: 16px 16px 0 0; padding: 24px; max-height: 70%; overflow-y: auto; }
+  .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .drawer-title { font-size: 18px; font-weight: 600; }
+  .drawer-close { font-size: 22px; cursor: pointer; color: #8c8c8c; }
+  .drawer-section { margin-bottom: 20px; }
+  .drawer-section-title { font-size: 13px; color: #8c8c8c; margin-bottom: 12px; }
+
+  /* 抽屉内对标列表 */
+  .compare-list { display: flex; flex-direction: column; gap: 12px; }
+  .compare-row { display: grid; grid-template-columns: 1fr auto auto; gap: 16px; align-items: center; padding: 12px 16px; border: 1px solid #f0f0f0; border-radius: 8px; }
+  .compare-row.default { background: #f0f5ff; border-color: #91caff; }
+  .compare-name { display: flex; align-items: center; gap: 6px; }
+  .compare-star { color: #faad14; }
+  .compare-count { font-size: 12px; color: #8c8c8c; }
+  .compare-grade { font-size: 16px; font-weight: 600; }
+
+  /* 提示框 */
+  .tip-box { padding: 12px 16px; background: #fffbe6; border: 1px solid #ffe58f; border-radius: 8px; font-size: 13px; color: #595959; line-height: 1.6; }
+
+  /* CTA */
+  .drawer-actions { display: flex; gap: 12px; }
+  .drawer-actions .btn { flex: 1; padding: 10px; }
+
+  /* 列设置抽屉 */
+  .col-setting-drawer { width: 380px; max-width: 90%; }
+  .col-list { display: flex; flex-direction: column; gap: 8px; }
+  .col-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border: 1px solid #f0f0f0; border-radius: 8px; }
+  .col-item .col-handle { color: #bfbfbf; cursor: grab; }
+  .switch { width: 36px; height: 20px; background: #d9d9d9; border-radius: 10px; position: relative; cursor: pointer; }
+  .switch.on { background: #1890ff; }
+  .switch::after { content: ""; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: .2s; }
+  .switch.on::after { left: 18px; }
+
+  .page-title { text-align: center; font-size: 22px; font-weight: 600; margin: 30px 0 16px; color: #262626; }
+  .page-subtitle { text-align: center; font-size: 14px; color: #8c8c8c; margin-bottom: 20px; }
+
+  /* 抽屉变体（列设置）*/
+  .drawer-mask.right { align-items: stretch; justify-content: flex-end; }
+  .drawer-mask.right .drawer { border-radius: 16px 0 0 16px; max-height: 100%; height: 100%; padding-top: 30px; }
+
+  /* 评级列下拉 */
+  .grade-dropdown { position: absolute; background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.1); padding: 8px 0; min-width: 180px; z-index: 50; display: none; }
+  .grade-dropdown.show { display: block; }
+  .dropdown-item { padding: 8px 16px; font-size: 14px; cursor: pointer; display: flex; justify-content: space-between; }
+  .dropdown-item:hover { background: #f5f5f5; }
+  .dropdown-item.selected { color: #1890ff; }
+  .dropdown-divider { height: 1px; background: #f0f0f0; margin: 4px 0; }
+
+  /* 引导气泡 */
+  .guide-popup { position: absolute; top: 360px; left: 580px; width: 320px; padding: 16px; background: #1890ff; color: #fff; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.2); z-index: 80; }
+  .guide-popup::before { content: ""; position: absolute; top: -8px; left: 30px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 8px solid #1890ff; }
+  .guide-popup .guide-title { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+  .guide-popup .guide-text { font-size: 13px; line-height: 1.6; margin-bottom: 12px; }
+  .guide-popup .guide-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .guide-popup .guide-btn { padding: 4px 12px; background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); border-radius: 4px; color: #fff; font-size: 12px; cursor: pointer; }
+  .guide-popup .guide-btn.primary { background: #fff; color: #1890ff; }
+</style>
+</head>
+<body>
+
+<!-- ============ 页面1：评级列改造（默认态） ============ -->
+<h1 class="page-title">页面1 · 日目标-评级列升级（默认态）</h1>
+<p class="page-subtitle">关键改造：评级列从单值"AA"升级为双值"本店·对标组+偏离箭头"</p>
+
+<div class="ipad">
+  <div class="statusbar"><span>9:41 Mon Jun 10</span><span>📶 100%</span></div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="back">‹</span>
+      <span class="date">2024/09/05（周四）</span>
+      <div class="tags">
+        <span class="tag tag-1">中秋节</span>
+        <span class="tag tag-2">门店店庆日</span>
+        <span class="tag tag-3">七夕狂欢节</span>
+        <span class="tag tag-4">店庆感恩月</span>
+        <span class="tag tag-5">情满中秋·团圆购物节</span>
+        <span class="tag tag-more">+5</span>
+      </div>
+      <span class="weather">🌧 暴雨 22~29℃</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-default">删除</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <span class="kpi-label">建议目标</span>
+      <div class="kpi-value"><span class="kpi-num">8,000</span><span class="kpi-sub">（客单量：450）</span></div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">计划目标</span>
+      <div class="kpi-value"><span class="kpi-num dark">8,500</span><span class="kpi-sub">（客单量：550）</span><span class="icon-edit">✎</span></div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">调整目标原因</span>
+      <div class="kpi-value"><span class="kpi-sub">请填写</span><span class="icon-edit">✎</span></div>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">客单价</span>
+      <div class="kpi-value"><span class="kpi-num dark">35</span></div>
+    </div>
+  </div>
+
+  <div class="cat-tabs">
+    <div class="cat-tab"><span class="cat-tab-name">全部</span><span class="cat-tab-sub">合计：8,000</span></div>
+    <div class="cat-tab active"><span class="cat-tab-name">现烤类</span><span class="cat-tab-sub">3,500  43%</span></div>
+    <div class="cat-tab"><span class="cat-tab-name">包装类</span><span class="cat-tab-sub">2,000  25%</span></div>
+    <div class="cat-tab"><span class="cat-tab-name">常温类</span><span class="cat-tab-sub">800  10%</span></div>
+    <div class="cat-tab"><span class="cat-tab-name">西点类</span><span class="cat-tab-sub">600  7.5%</span></div>
+    <div class="cat-tab"><span class="cat-tab-name">外购类</span><span class="cat-tab-sub">554  6.9%</span></div>
+    <div class="cat-tab"><span class="cat-tab-name">干点类</span><span class="cat-tab-sub">436  5.5%</span></div>
+    <div class="cat-tab"><span class="cat-tab-name">饮品类</span><span class="cat-tab-sub">110  1.4%</span></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30%">物料名称</th>
+        <th style="width:6%">单价</th>
+        <th style="width:18%">
+          <div class="col-header-grade" onclick="toggleDropdown('dd1', event)">
+            评级 <span style="color:#8c8c8c">(本店·</span><span class="group-name">社区综合体店</span><span style="color:#8c8c8c">)</span> ▼
+          </div>
+          <div id="dd1" class="grade-dropdown" style="left:8px;top:42px">
+            <div class="dropdown-item">所有门店 (1,200店)</div>
+            <div class="dropdown-item selected">⭐ 社区综合体店 (45店)</div>
+            <div class="dropdown-item">A类店 (180店)</div>
+            <div class="dropdown-item">华南区·现烤组 (120店)</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" style="color:#8c8c8c">⚙ 设为默认对标组</div>
+          </div>
+        </th>
+        <th style="width:14%">建议→目标销量</th>
+        <th style="width:10%">营销活动</th>
+        <th style="width:10%">目标金额</th>
+        <th style="width:12%">操作 <span class="col-setting" onclick="document.getElementById('colmask').classList.add('show')">⚙ 列设置</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="item-cell">
+            <span class="seq">1</span>
+            <div class="item-name"><span class="name"><span class="new-tag">新</span>梦龙榛果巧克力派</span></div>
+          </div>
+        </td>
+        <td>7</td>
+        <td><span class="grade-cell" onclick="document.getElementById('mask').classList.add('show')">
+          <span class="grade-self">AA</span><span class="grade-sep">·</span><span class="grade-group">AA</span><span class="grade-arrow arrow-equal">=</span>
+        </span></td>
+        <td>
+          <div class="qty-merged">
+            <span class="qty-suggest">35</span>
+            <span class="qty-arrow">→</span>
+            <span class="qty-input"><button>−</button><input value="35"><button>+</button></span>
+          </div>
+        </td>
+        <td><span class="promo"><span class="promo-tag">加价购</span><span class="promo-more">+3</span></span></td>
+        <td>245</td>
+        <td><span style="color:#1890ff;cursor:pointer">详情</span></td>
+      </tr>
+      <tr class="row-warn-down">
+        <td>
+          <div class="item-cell">
+            <span class="seq">2</span>
+            <div class="item-name"><span class="name"><span class="new-tag">新</span>榴莲面包名称过长时折行处理</span></div>
+          </div>
+        </td>
+        <td>18</td>
+        <td><span class="grade-cell">
+          <span class="grade-self">AB</span><span class="grade-sep">·</span><span class="grade-group">AA</span><span class="grade-arrow arrow-down-1">↓</span>
+        </span></td>
+        <td>
+          <div class="qty-merged"><span class="qty-suggest">15</span><span class="qty-arrow">→</span>
+            <span class="qty-input"><button>−</button><input value="15"><button>+</button></span></div>
+        </td>
+        <td><span class="promo"><span class="promo-tag">充值</span></span></td>
+        <td>270</td>
+        <td><span style="color:#1890ff;cursor:pointer">详情</span></td>
+      </tr>
+      <tr class="row-warn-strong">
+        <td>
+          <div class="item-cell">
+            <span class="seq">3</span>
+            <div class="item-name"><span class="name">手撕老面包</span></div>
+          </div>
+        </td>
+        <td>9.6</td>
+        <td><span class="grade-cell">
+          <span class="grade-self">BC</span><span class="grade-sep">·</span><span class="grade-group">AA</span><span class="grade-arrow arrow-down-2">↓↓</span>
+        </span></td>
+        <td>
+          <div class="qty-merged"><span class="qty-suggest">60</span><span class="qty-arrow">→</span>
+            <span class="qty-input"><button>−</button><input value="60"><button>+</button></span></div>
+        </td>
+        <td><span class="promo"><span class="promo-tag">满减</span><span class="promo-more">+2</span></span></td>
+        <td>200</td>
+        <td><span style="color:#1890ff;cursor:pointer">详情</span></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="item-cell">
+            <span class="seq">4</span>
+            <div class="item-name"><span class="name">丹麦披萨</span></div>
+          </div>
+        </td>
+        <td>9.9</td>
+        <td><span class="grade-cell">
+          <span class="grade-self">AA</span><span class="grade-sep">·</span><span class="grade-group">AB</span><span class="grade-arrow arrow-up-1">↑</span>
+        </span></td>
+        <td>
+          <div class="qty-merged"><span class="qty-suggest">80</span><span class="qty-arrow">→</span>
+            <span class="qty-input"><button>−</button><input value="80"><button>+</button></span></div>
+        </td>
+        <td><span class="promo"><span class="promo-tag">充值</span><span class="promo-tag">满赠</span></span></td>
+        <td>320</td>
+        <td><span style="color:#1890ff;cursor:pointer">详情</span></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="item-cell">
+            <span class="seq">5</span>
+            <div class="item-name"><span class="name">芝士火腿可颂</span></div>
+          </div>
+        </td>
+        <td>8.9</td>
+        <td><span class="grade-cell">
+          <span class="grade-self">AA</span><span class="grade-sep">·</span><span class="grade-group">BC</span><span class="grade-arrow arrow-up-2">↑↑</span>
+        </span></td>
+        <td>
+          <div class="qty-merged"><span class="qty-suggest">90</span><span class="qty-arrow">→</span>
+            <span class="qty-input"><button>−</button><input value="90"><button>+</button></span></div>
+        </td>
+        <td><span class="promo"><span class="promo-tag">特价</span></span></td>
+        <td>380</td>
+        <td><span style="color:#1890ff;cursor:pointer">详情</span></td>
+      </tr>
+      <tr class="row-warn-down">
+        <td>
+          <div class="item-cell">
+            <span class="seq">6</span>
+            <div class="item-name"><span class="name">草莓甜筒</span></div>
+          </div>
+        </td>
+        <td>9.5</td>
+        <td><span class="grade-cell">
+          <span class="grade-self">AB</span><span class="grade-sep">·</span><span class="grade-group">AA</span><span class="grade-arrow arrow-down-1">↓</span>
+        </span></td>
+        <td>
+          <div class="qty-merged"><span class="qty-suggest">55</span><span class="qty-arrow">→</span>
+            <span class="qty-input"><button>−</button><input value="55"><button>+</button></span></div>
+        </td>
+        <td><span style="color:#bfbfbf">－</span></td>
+        <td>120</td>
+        <td><span style="color:#1890ff;cursor:pointer">详情</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ============ 页面2：评级详情抽屉 ============ -->
+<h1 class="page-title">页面2 · 评级详情抽屉（点击单元格触发）</h1>
+<p class="page-subtitle">关键交互：底部抽屉展示该物料在所有归属分析组的 ABC 对标</p>
+
+<div class="ipad">
+  <div class="statusbar"><span>9:41 Mon Jun 10</span><span>📶 100%</span></div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="back">‹</span>
+      <span class="date">2024/09/05（周四）</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-default">删除</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+
+  <!-- 蒙层和抽屉 -->
+  <div class="drawer-mask show" style="position:absolute">
+    <div class="drawer">
+      <div class="drawer-header">
+        <div>
+          <div class="drawer-title">手撕老面包</div>
+          <div style="color:#8c8c8c;font-size:12px;margin-top:4px">单价 ¥9.6 · 现烤类</div>
+        </div>
+        <span class="drawer-close">✕</span>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">本店评级</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:32px;font-weight:700;color:#f5222d">BC</span>
+          <span style="color:#8c8c8c;font-size:13px">基于本店近 30 天销售数据</span>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">所属分析组对标</div>
+        <div class="compare-list">
+          <div class="compare-row">
+            <div class="compare-name">所有门店 <span class="compare-count">(1,200店)</span></div>
+            <span class="compare-grade" style="color:#52c41a">AB</span>
+            <span class="grade-arrow arrow-up-1">↑</span>
+          </div>
+          <div class="compare-row default">
+            <div class="compare-name"><span class="compare-star">⭐</span>社区综合体店 <span class="compare-count">(45店)</span> <span style="font-size:11px;color:#1890ff">默认</span></div>
+            <span class="compare-grade" style="color:#52c41a">AA</span>
+            <span class="grade-arrow arrow-up-2">↑↑</span>
+          </div>
+          <div class="compare-row">
+            <div class="compare-name">A类店 <span class="compare-count">(180店)</span></div>
+            <span class="compare-grade" style="color:#52c41a">AA</span>
+            <span class="grade-arrow arrow-up-2">↑↑</span>
+          </div>
+          <div class="compare-row">
+            <div class="compare-name">华南区·现烤组 <span class="compare-count">(120店)</span></div>
+            <span class="compare-grade" style="color:#262626">BC</span>
+            <span class="grade-arrow arrow-equal">=</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="tip-box">
+          💡 <b>提示：</b>本店在 <b>社区综合体店</b> 组中评级偏低 2 档，同类型门店该产品多为 AA 级，<b>建议加大订货量</b>，可参考组内标杆门店做法。
+        </div>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-default">查看组内排名</button>
+        <button class="btn btn-primary">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ 页面3：列设置抽屉 ============ -->
+<h1 class="page-title">页面3 · 列设置抽屉（解决列吃紧）</h1>
+<p class="page-subtitle">关键交互：用户可自定义显示哪些列，将"计划试吃/计划退货/计划上架"默认隐藏到"更多"</p>
+
+<div class="ipad">
+  <div class="statusbar"><span>9:41 Mon Jun 10</span><span>📶 100%</span></div>
+  <div class="topbar">
+    <div class="topbar-left">
+      <span class="back">‹</span>
+      <span class="date">2024/09/05（周四）</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-default">删除</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+
+  <div class="drawer-mask right show" style="position:absolute">
+    <div class="drawer col-setting-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title">列设置</div>
+        <span class="drawer-close">✕</span>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">已显示（必显示）</div>
+        <div class="col-list">
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 序号+物料名称</span><span style="color:#bfbfbf;font-size:12px">必显示</span></div>
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 单价</span><div class="switch on"></div></div>
+          <div class="col-item" style="background:#f0f5ff;border-color:#91caff"><span><span class="col-handle">⋮⋮</span> 评级（本店·对标组）</span><div class="switch on"></div></div>
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 建议→目标销量</span><span style="color:#bfbfbf;font-size:12px">必显示</span></div>
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 营销活动</span><div class="switch on"></div></div>
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 目标金额</span><div class="switch on"></div></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="drawer-section-title">更多（默认隐藏）</div>
+        <div class="col-list">
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 计划试吃</span><div class="switch"></div></div>
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 计划退货</span><div class="switch"></div></div>
+          <div class="col-item"><span><span class="col-handle">⋮⋮</span> 计划上架</span><div class="switch"></div></div>
+        </div>
+      </div>
+
+      <div class="drawer-actions">
+        <button class="btn btn-default">恢复默认</button>
+        <button class="btn btn-primary">保存设置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ 页面4：后台-默认对标组配置 ============ -->
+<h1 class="page-title">页面4 · 后台管理-默认对标组配置（PC 端）</h1>
+<p class="page-subtitle">关键功能：后台管理员在已有"分析组管理"基础上配置"门店级默认对标组"</p>
+
+<div class="ipad" style="height:auto;min-height:500px;padding-bottom:24px">
+  <div style="background:#f0f2f5;padding:8px 24px;font-size:13px;color:#8c8c8c">系统设置 / 分析组设置 / 门店默认对标组</div>
+
+  <div style="padding:24px">
+    <h3 style="font-size:16px;margin-bottom:16px">门店默认对标组配置</h3>
+
+    <div style="display:flex;gap:16px;margin-bottom:20px">
+      <div style="flex:1">
+        <label style="font-size:12px;color:#8c8c8c">门店</label>
+        <div style="border:1px solid #d9d9d9;border-radius:6px;padding:8px 12px;margin-top:4px">高新万达店 ▼</div>
+      </div>
+      <div style="flex:1">
+        <label style="font-size:12px;color:#8c8c8c">所属分析组</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+          <span class="promo-tag">所有门店</span>
+          <span class="promo-tag">社区综合体店</span>
+          <span class="promo-tag">A类店</span>
+          <span class="promo-tag">华南区·现烤组</span>
+        </div>
+      </div>
+    </div>
+
+    <table style="margin-top:20px">
+      <thead>
+        <tr>
+          <th style="width:8%">默认</th>
+          <th style="width:30%">分析组名称</th>
+          <th style="width:15%">分组维度</th>
+          <th style="width:15%">门店数</th>
+          <th style="width:15%">是否可作为对标组</th>
+          <th style="width:17%">优先级</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><input type="radio" name="default_group"></td>
+          <td>所有门店</td>
+          <td>全集</td>
+          <td>1,200</td>
+          <td><div class="switch on" style="display:inline-block"></div></td>
+          <td>4</td>
+        </tr>
+        <tr style="background:#f0f5ff">
+          <td><input type="radio" name="default_group" checked></td>
+          <td>⭐ 社区综合体店</td>
+          <td>店型</td>
+          <td>45</td>
+          <td><div class="switch on" style="display:inline-block"></div></td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td><input type="radio" name="default_group"></td>
+          <td>A类店</td>
+          <td>店等级</td>
+          <td>180</td>
+          <td><div class="switch on" style="display:inline-block"></div></td>
+          <td>2</td>
+        </tr>
+        <tr>
+          <td><input type="radio" name="default_group"></td>
+          <td>华南区·现烤组</td>
+          <td>区域+品类</td>
+          <td>120</td>
+          <td><div class="switch on" style="display:inline-block"></div></td>
+          <td>3</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top:20px;padding:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;font-size:13px">
+      💡 <b>说明：</b>当门店属于多个分析组时，系统按"默认对标组"展示组内 ABC 对标。门店级未配置时，按"分析组优先级"自动选择最小粒度组。
+    </div>
+
+    <div style="margin-top:24px;display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-default">取消</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============ 颜色与组件规格说明 ============ -->
+<h1 class="page-title">页面5 · 颜色与组件规格（用于 Figma 搭建）</h1>
+
+<div class="ipad" style="height:auto;min-height:600px">
+  <div style="padding:24px">
+    <h3 style="font-size:16px;margin-bottom:16px">评级偏离视觉规则</h3>
+    <table>
+      <thead>
+        <tr><th>偏离</th><th>显示</th><th>颜色</th><th>HEX</th><th>背景</th><th>HEX</th><th>业务含义</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>本店 = 组内</td><td><span class="grade-cell"><span class="grade-self">AA</span>·<span class="grade-group">AA</span><span class="arrow-equal">=</span></span></td><td>灰</td><td>#bfbfbf</td><td>白</td><td>#ffffff</td><td>表现一致</td></tr>
+        <tr><td>本店 高 1 档</td><td><span class="grade-cell"><span class="grade-self">AA</span>·<span class="grade-group">AB</span><span class="arrow-up-1">↑</span></span></td><td>绿</td><td>#52c41a</td><td>白</td><td>#ffffff</td><td>本店是标杆</td></tr>
+        <tr><td>本店 高 ≥2 档</td><td><span class="grade-cell"><span class="grade-self">AA</span>·<span class="grade-group">BC</span><span class="arrow-up-2">↑↑</span></span></td><td>深绿</td><td>#389e0d</td><td>白</td><td>#ffffff</td><td>异常优秀</td></tr>
+        <tr><td>本店 低 1 档</td><td><span class="grade-cell"><span class="grade-self">AB</span>·<span class="grade-group">AA</span><span class="arrow-down-1">↓</span></span></td><td>橙</td><td>#fa8c16</td><td>浅黄</td><td>#fffbe6</td><td><b>建议加货</b></td></tr>
+        <tr><td>本店 低 ≥2 档</td><td><span class="grade-cell"><span class="grade-self">BC</span>·<span class="grade-group">AA</span><span class="arrow-down-2">↓↓</span></span></td><td>红</td><td>#f5222d</td><td>浅红</td><td>#fff1f0</td><td><b>强建议加货+排查</b></td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:16px;margin:24px 0 16px">关键尺寸</h3>
+    <ul style="font-size:13px;line-height:2;color:#595959;padding-left:20px">
+      <li>设备：iPad 横屏 1194 x 834</li>
+      <li>表头行高：40px，字号 13px，颜色 #595959</li>
+      <li>表格行高：48px，字号 14px</li>
+      <li>评级单元格：内边距 2px 6px，hover 背景 #f0f5ff</li>
+      <li>评级双值字号：本店 14px Bold #262626，分隔符 12px #d9d9d9，组内 14px Regular #595959</li>
+      <li>箭头字号：12px Bold</li>
+      <li>抽屉宽度：底部抽屉 600px / 列设置抽屉 380px</li>
+      <li>抽屉圆角：底部 16px 16px 0 0 / 右侧 16px 0 0 16px</li>
+      <li>主色：#1890ff</li>
+      <li>分割线：#f0f0f0 / #f5f5f5</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  function toggleDropdown(id, e) {
+    e.stopPropagation();
+    document.querySelectorAll('.grade-dropdown').forEach(d => d.id !== id && d.classList.remove('show'));
+    document.getElementById(id).classList.toggle('show');
+  }
+  document.addEventListener('click', () => {
+    document.querySelectorAll('.grade-dropdown').forEach(d => d.classList.remove('show'));
+  });
+</script>
+
+</body>
+</html>
