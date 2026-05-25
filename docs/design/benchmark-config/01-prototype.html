@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>分析组对标配置 - 高保真原型</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f0f2f5; padding: 24px; }
+
+.page { max-width: 1200px; margin: 0 auto 40px; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow: hidden; }
+.page-title { text-align: center; font-size: 20px; font-weight: 600; color: #262626; padding: 24px 0 8px; }
+.page-desc { text-align: center; font-size: 13px; color: #8c8c8c; margin-bottom: 24px; }
+
+/* 面包屑 */
+.breadcrumb { padding: 16px 24px 0; font-size: 13px; color: #8c8c8c; }
+
+/* Tab 栏 */
+.tabs { display: flex; gap: 24px; padding: 16px 24px 0; border-bottom: 1px solid #f0f0f0; }
+.tab { padding-bottom: 12px; font-size: 15px; color: #595959; cursor: pointer; }
+.tab.active { color: #1890ff; border-bottom: 2px solid #1890ff; font-weight: 500; }
+
+/* 工具栏 */
+.toolbar { padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+.toolbar-left { font-size: 13px; color: #595959; }
+.btn { padding: 6px 16px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid #d9d9d9; background: #fff; color: #595959; }
+.btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
+.btn-sm { padding: 4px 12px; font-size: 13px; }
+
+/* 表格 */
+table { width: 100%; border-collapse: collapse; }
+thead th { background: #fafafa; padding: 12px 16px; text-align: left; font-size: 13px; color: #595959; font-weight: 500; border-bottom: 1px solid #f0f0f0; }
+tbody td { padding: 14px 16px; font-size: 14px; color: #262626; border-bottom: 1px solid #f5f5f5; }
+tbody tr:hover { background: #fafafa; }
+
+/* 操作链接 */
+.action-link { color: #1890ff; cursor: pointer; margin-right: 16px; font-size: 14px; }
+.action-link:hover { text-decoration: underline; }
+.action-link.danger { color: #f5222d; }
+.action-link.primary { font-weight: 500; }
+
+/* 对标门店数 */
+.benchmark-count { color: #1890ff; font-weight: 500; }
+
+/* 弹窗蒙层 */
+.modal-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 100; justify-content: center; align-items: center; }
+.modal-mask.show { display: flex; }
+
+/* 弹窗 */
+.modal { background: #fff; border-radius: 8px; width: 720px; max-width: 90vw; max-height: 80vh; display: flex; flex-direction: column; }
+.modal-header { padding: 20px 24px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; }
+.modal-title { font-size: 16px; font-weight: 600; color: #262626; }
+.modal-close { font-size: 20px; color: #8c8c8c; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 4px; }
+.modal-close:hover { background: #f5f5f5; }
+.modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #f0f0f0; display: flex; justify-content: flex-end; gap: 12px; }
+
+/* 提示条 */
+.tip-bar { padding: 12px 16px; background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 4px; font-size: 13px; color: #595959; margin-bottom: 16px; line-height: 1.6; }
+
+/* 弹窗内工具栏 */
+.modal-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.search-input { padding: 6px 12px; border: 1px solid #d9d9d9; border-radius: 4px; font-size: 13px; width: 200px; }
+.modal-toolbar-right { display: flex; gap: 8px; }
+
+/* 状态标签 */
+.status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+.status-self { background: #f6ffed; border: 1px solid #b7eb8f; color: #389e0d; }
+.status-other { background: #fffbe6; border: 1px solid #ffe58f; color: #d48806; }
+.status-none { background: #f5f5f5; border: 1px solid #d9d9d9; color: #8c8c8c; }
+
+/* 弹窗内操作按钮 */
+.op-btn { padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; border: 1px solid; }
+.op-set { background: #e6f7ff; border-color: #91d5ff; color: #1890ff; }
+.op-set:hover { background: #bae7ff; }
+.op-cancel { background: #fff1f0; border-color: #ffa39e; color: #f5222d; }
+.op-cancel:hover { background: #ffccc7; }
+
+/* 统计行 */
+.stat-row { padding: 12px 0 0; font-size: 13px; color: #595959; border-top: 1px solid #f0f0f0; margin-top: 12px; }
+
+/* 确认弹窗 */
+.confirm-modal { width: 420px; }
+.confirm-content { padding: 8px 0; font-size: 14px; line-height: 1.8; color: #595959; }
+.confirm-highlight { color: #1890ff; font-weight: 500; }
+.confirm-warn { color: #fa8c16; }
+
+/* 分割线 */
+hr { border: none; border-top: 1px solid #f0f0f0; margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- ========== 页面1：列表页 ========== -->
+<h1 class="page-title">页面1 · 分析组设置列表页（新增"对标配置"按钮）</h1>
+<p class="page-desc">改动点：操作栏新增"对标配置"蓝色链接 + 新增"对标门店数"列</p>
+
+<div class="page">
+  <div class="breadcrumb">产品经理工具箱 > 上下市管理 > 分析组设置</div>
+  <div class="tabs">
+    <span class="tab">产品设置</span>
+    <span class="tab active">分析组设置</span>
+    <span class="tab">更新数据</span>
+  </div>
+  <div class="toolbar">
+    <span class="toolbar-left">最大分析门店数：0</span>
+    <button class="btn btn-primary btn-sm">新增</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:30%">分析组名称</th>
+        <th style="width:15%">门店数</th>
+        <th style="width:15%">对标门店数 <span style="color:#8c8c8c;cursor:help" title="本组内已设为PAD端同类店对标的门店数量">❓</span></th>
+        <th style="width:40%">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>全门店产品分析</td>
+        <td>28</td>
+        <td><span class="benchmark-count">18</span></td>
+        <td>
+          <span class="action-link primary" onclick="document.getElementById('benchmarkModal').classList.add('show')">对标配置</span>
+          <span class="action-link">编辑</span>
+          <span class="action-link danger">删除</span>
+        </td>
+      </tr>
+      <tr>
+        <td>品牌社区型门店</td>
+        <td>10</td>
+        <td><span class="benchmark-count">7</span></td>
+        <td>
+          <span class="action-link primary">对标配置</span>
+          <span class="action-link">编辑</span>
+          <span class="action-link danger">删除</span>
+        </td>
+      </tr>
+      <tr>
+        <td>品牌商场型门店</td>
+        <td>9</td>
+        <td><span class="benchmark-count">9</span></td>
+        <td>
+          <span class="action-link primary">对标配置</span>
+          <span class="action-link">编辑</span>
+          <span class="action-link danger">删除</span>
+        </td>
+      </tr>
+      <tr>
+        <td>品牌旗舰型门店</td>
+        <td>7</td>
+        <td><span class="benchmark-count">7</span></td>
+        <td>
+          <span class="action-link primary">对标配置</span>
+          <span class="action-link">编辑</span>
+          <span class="action-link danger">删除</span>
+        </td>
+      </tr>
+      <tr>
+        <td>品牌mini型门店</td>
+        <td>3</td>
+        <td><span class="benchmark-count">3</span></td>
+        <td>
+          <span class="action-link primary">对标配置</span>
+          <span class="action-link">编辑</span>
+          <span class="action-link danger">删除</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ========== 页面2：对标配置弹窗 ========== -->
+<h1 class="page-title">页面2 · 对标配置弹窗（点击"对标配置"触发）</h1>
+<p class="page-desc">展示本组内所有门店的对标状态，可逐个或批量设置/取消对标</p>
+
+<div class="modal-mask show" id="benchmarkModal" style="position:relative;background:transparent;display:flex;padding:0">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">对标配置 — 品牌社区型门店</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="tip-bar">
+        💡 勾选门店后，该门店PAD端"日目标"页面将以本分析组作为同类店ABC对标。每个门店只能属于一个对标组，设置后将覆盖该门店之前的对标配置。
+      </div>
+
+      <div class="modal-toolbar">
+        <input class="search-input" placeholder="🔍 搜索门店名称">
+        <div class="modal-toolbar-right">
+          <button class="btn btn-sm" onclick="document.getElementById('batchSetModal').classList.add('show')" style="color:#1890ff;border-color:#1890ff">全选设为对标</button>
+          <button class="btn btn-sm" style="color:#f5222d;border-color:#f5222d">全部取消对标</button>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:8%">序号</th>
+            <th style="width:25%">门店名称</th>
+            <th style="width:35%">当前对标组</th>
+            <th style="width:32%">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>01</td>
+            <td>旗舰店(巢)</td>
+            <td><span class="status status-self">✅ 本组</span></td>
+            <td><button class="op-btn op-cancel">取消对标</button></td>
+          </tr>
+          <tr>
+            <td>02</td>
+            <td>社区店(巢)</td>
+            <td><span class="status status-self">✅ 本组</span></td>
+            <td><button class="op-btn op-cancel">取消对标</button></td>
+          </tr>
+          <tr>
+            <td>03</td>
+            <td>时尚店(巢)</td>
+            <td><span class="status status-none">未设置</span></td>
+            <td><button class="op-btn op-set">设为对标</button></td>
+          </tr>
+          <tr>
+            <td>04</td>
+            <td>体验店(巢)</td>
+            <td><span class="status status-self">✅ 本组</span></td>
+            <td><button class="op-btn op-cancel">取消对标</button></td>
+          </tr>
+          <tr>
+            <td>05</td>
+            <td>万达店(巢)</td>
+            <td><span class="status status-other">⚠️ 全门店产品分析</span></td>
+            <td><button class="op-btn op-set" onclick="document.getElementById('conflictModal').classList.add('show')">设为对标</button></td>
+          </tr>
+          <tr>
+            <td>06</td>
+            <td>风尚店(巢)</td>
+            <td><span class="status status-none">未设置</span></td>
+            <td><button class="op-btn op-set">设为对标</button></td>
+          </tr>
+          <tr>
+            <td>07</td>
+            <td>商贸城(含)</td>
+            <td><span class="status status-other">⚠️ 品牌商场型门店</span></td>
+            <td><button class="op-btn op-set">设为对标</button></td>
+          </tr>
+          <tr>
+            <td>08</td>
+            <td>原鲜店(含)</td>
+            <td><span class="status status-self">✅ 本组</span></td>
+            <td><button class="op-btn op-cancel">取消对标</button></td>
+          </tr>
+          <tr>
+            <td>09</td>
+            <td>万达店(含)</td>
+            <td><span class="status status-none">未设置</span></td>
+            <td><button class="op-btn op-set">设为对标</button></td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td>弘阳店(合)</td>
+            <td><span class="status status-self">✅ 本组</span></td>
+            <td><button class="op-btn op-cancel">取消对标</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="stat-row">
+        统计：本组共 <b>10</b> 家门店，其中 <b style="color:#389e0d">5</b> 家已设为本组对标，<b style="color:#8c8c8c">3</b> 家未设置，<b style="color:#d48806">2</b> 家属于其他组
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">取消</button>
+      <button class="btn btn-primary">保存</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== 页面3：冲突确认弹窗 ========== -->
+<h1 class="page-title">页面3 · 冲突确认弹窗（门店已属于其他对标组时触发）</h1>
+<p class="page-desc">当点击"设为对标"的门店已属于其他分析组时弹出</p>
+
+<div class="modal-mask show" id="conflictModal" style="position:relative;background:transparent;display:flex;padding:0">
+  <div class="modal confirm-modal">
+    <div class="modal-header">
+      <span class="modal-title">确认变更对标组</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-content">
+        <p><b>万达店(巢)</b> 当前对标组为：<span class="confirm-warn">全门店产品分析</span></p>
+        <br>
+        <p>是否变更为：<span class="confirm-highlight">品牌社区型门店</span>？</p>
+        <br>
+        <p style="color:#8c8c8c;font-size:13px">变更后，该门店PAD端将以"品牌社区型门店"作为同类店ABC对标。<br>原对标组"全门店产品分析"的对标门店数将减少1。</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">取消</button>
+      <button class="btn btn-primary">确认变更</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== 页面4：取消对标确认弹窗 ========== -->
+<h1 class="page-title">页面4 · 取消对标确认弹窗</h1>
+<p class="page-desc">当点击"取消对标"时弹出</p>
+
+<div class="modal-mask show" style="position:relative;background:transparent;display:flex;padding:0">
+  <div class="modal confirm-modal">
+    <div class="modal-header">
+      <span class="modal-title">确认取消对标</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-content">
+        <p>取消后，<b>旗舰店(巢)</b> 将不再有对标组设置。</p>
+        <br>
+        <p style="color:#8c8c8c;font-size:13px">PAD端该门店的同类店ABC对标功能将不展示，评级列退化为仅显示本店评级。</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">取消</button>
+      <button class="btn" style="background:#f5222d;color:#fff;border-color:#f5222d">确认取消对标</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== 页面5：批量设为对标确认弹窗 ========== -->
+<h1 class="page-title">页面5 · 批量设为对标确认弹窗</h1>
+<p class="page-desc">点击"全选设为对标"时弹出，展示变更明细</p>
+
+<div class="modal-mask show" id="batchSetModal" style="position:relative;background:transparent;display:flex;padding:0">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <span class="modal-title">批量设为对标</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-content">
+        <p>将本组全部 <b>10</b> 家门店设为本组对标：</p>
+        <br>
+        <table style="font-size:13px">
+          <tbody>
+            <tr>
+              <td style="padding:6px 8px"><span style="color:#389e0d">✅</span></td>
+              <td style="padding:6px 8px"><b>5 家</b></td>
+              <td style="padding:6px 8px;color:#8c8c8c">已是本组对标，无变化</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px"><span style="color:#1890ff">🔄</span></td>
+              <td style="padding:6px 8px"><b>3 家</b></td>
+              <td style="padding:6px 8px;color:#595959">未设置 → 设为本组<br><span style="color:#8c8c8c;font-size:12px">时尚店(巢)、风尚店(巢)、万达店(含)</span></td>
+            </tr>
+            <tr>
+              <td style="padding:6px 8px"><span style="color:#fa8c16">⚠️</span></td>
+              <td style="padding:6px 8px"><b>2 家</b></td>
+              <td style="padding:6px 8px;color:#595959">将从其他组变更为本组：<br>
+                <span style="color:#8c8c8c;font-size:12px">
+                  • 万达店(巢)：全门店产品分析 → 本组<br>
+                  • 商贸城(含)：品牌商场型门店 → 本组
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <hr>
+        <p>实际变更：<b style="color:#1890ff">5</b> 家门店</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">取消</button>
+      <button class="btn btn-primary">确认全部设为对标</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== 页面6：删除分析组校验弹窗 ========== -->
+<h1 class="page-title">页面6 · 删除分析组校验（有对标门店时阻断）</h1>
+<p class="page-desc">当分析组下有对标门店时，阻止删除</p>
+
+<div class="modal-mask show" style="position:relative;background:transparent;display:flex;padding:0">
+  <div class="modal confirm-modal">
+    <div class="modal-header">
+      <span class="modal-title">⚠️ 无法删除</span>
+      <span class="modal-close">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="confirm-content">
+        <p>当前有 <b style="color:#f5222d">7</b> 个门店将"品牌社区型门店"作为智慧门店对标组：</p>
+        <br>
+        <p style="color:#8c8c8c;font-size:13px">旗舰店(巢)、社区店(巢)、体验店(巢)、原鲜店(含)、弘阳店(合)...</p>
+        <br>
+        <p>请先取消这些门店的对标设置，或将其变更到其他分析组后，再删除本分析组。</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn">知道了</button>
+      <button class="btn btn-primary">前往对标配置</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== 设计规格 ========== -->
+<h1 class="page-title">设计规格（用于 Figma 搭建）</h1>
+
+<div class="page" style="padding:24px">
+  <h3 style="margin-bottom:12px">状态标签规格</h3>
+  <table>
+    <thead><tr><th>状态</th><th>样式</th><th>背景</th><th>边框</th><th>文字色</th></tr></thead>
+    <tbody>
+      <tr><td><span class="status status-self">✅ 本组</span></td><td>status-self</td><td>#f6ffed</td><td>#b7eb8f</td><td>#389e0d</td></tr>
+      <tr><td><span class="status status-other">⚠️ 全门店产品分析</span></td><td>status-other</td><td>#fffbe6</td><td>#ffe58f</td><td>#d48806</td></tr>
+      <tr><td><span class="status status-none">未设置</span></td><td>status-none</td><td>#f5f5f5</td><td>#d9d9d9</td><td>#8c8c8c</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin:24px 0 12px">操作按钮规格</h3>
+  <table>
+    <thead><tr><th>按钮</th><th>样式</th><th>背景</th><th>边框</th><th>文字色</th><th>hover背景</th></tr></thead>
+    <tbody>
+      <tr><td><button class="op-btn op-set">设为对标</button></td><td>op-set</td><td>#e6f7ff</td><td>#91d5ff</td><td>#1890ff</td><td>#bae7ff</td></tr>
+      <tr><td><button class="op-btn op-cancel">取消对标</button></td><td>op-cancel</td><td>#fff1f0</td><td>#ffa39e</td><td>#f5222d</td><td>#ffccc7</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin:24px 0 12px">关键尺寸</h3>
+  <ul style="font-size:13px;line-height:2.2;color:#595959;padding-left:20px">
+    <li>弹窗宽度：720px（对标配置）/ 420-520px（确认弹窗）</li>
+    <li>弹窗圆角：8px</li>
+    <li>表格行高：48px</li>
+    <li>状态标签：padding 2px 8px，圆角 4px，字号 12px</li>
+    <li>操作按钮：padding 4px 12px，圆角 4px，字号 12px</li>
+    <li>提示条：padding 12px 16px，圆角 4px，字号 13px</li>
+    <li>主色：#1890ff</li>
+    <li>成功色：#389e0d / #52c41a</li>
+    <li>警告色：#d48806 / #fa8c16</li>
+    <li>危险色：#f5222d</li>
+  </ul>
+
+  <h3 style="margin:24px 0 12px">校验规则速查</h3>
+  <table>
+    <thead><tr><th>编号</th><th>时机</th><th>规则</th><th>处理</th></tr></thead>
+    <tbody>
+      <tr><td>V1</td><td>点击"设为对标"</td><td>门店已属其他组？</td><td>无→直接生效；有→弹窗确认覆盖</td></tr>
+      <tr><td>V2</td><td>点击"取消对标"</td><td>—</td><td>弹窗确认"PAD不再展示"</td></tr>
+      <tr><td>V3</td><td>点击"全选设为对标"</td><td>逐一检查状态</td><td>汇总展示变更明细+确认</td></tr>
+      <tr><td>V4</td><td>删除分析组</td><td>组下有对标门店？</td><td>有→阻断，提示先解绑</td></tr>
+      <tr><td>V5</td><td>编辑页移除门店</td><td>门店对标=本组？</td><td>提示"移除后对标清空"</td></tr>
+    </tbody>
+  </table>
+</div>
+
+</body>
+</html>
